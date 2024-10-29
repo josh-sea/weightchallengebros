@@ -1,38 +1,42 @@
-import React, { useEffect, useState } from "react";
-import { Bar, Line } from "react-chartjs-2";
-import { Segment, Button } from "semantic-ui-react";
+import React, { useEffect, useRef, useState } from "react";
+import { Line } from "react-chartjs-2";
+import { Segment, Dropdown, Button } from "semantic-ui-react";
 import {
   Chart as ChartJS,
   CategoryScale,
   LinearScale,
-  BarElement,
-  LineElement,
-  PointElement,
   Title,
   Tooltip,
   Legend,
+  LineElement,
+  PointElement,
   TimeScale,
 } from "chart.js";
+import annotationPlugin from "chartjs-plugin-annotation";
+import zoomPlugin from "chartjs-plugin-zoom";
 import "moment";
 import "chartjs-adapter-moment";
 
+// Register Chart.js components and plugins
 ChartJS.register(
   CategoryScale,
   LinearScale,
-  BarElement,
-  LineElement,
-  PointElement,
   Title,
   Tooltip,
   Legend,
+  LineElement,
+  PointElement,
   TimeScale,
+  annotationPlugin,
+  zoomPlugin // Register the zoom plugin
 );
 
-const UserWeightChart = ({ data }) => {
+const UserWeightChart = ({ data, goal, userEmail }) => {
   const [chartData, setChartData] = useState();
-  const [chartType, setChartType] = useState("Bar");
+  const [options, setOptions] = useState({});
+  const [visibleGoals, setVisibleGoals] = useState({});
+  const chartRef = useRef(null);
 
-  // Define an array of colors for the trend lines
   const lineChartColors = [
     "rgba(255, 99, 132, 0.5)",
     "rgba(54, 162, 235, 0.5)",
@@ -42,77 +46,134 @@ const UserWeightChart = ({ data }) => {
     "rgba(255, 159, 64, 0.5)",
   ];
 
+  // Initialize visibleGoals only once when the component mounts
   useEffect(() => {
-    if (chartType === "Bar") {
-      const barData = {
-        labels: data.map((item) => item.name),
-        datasets: [
-          {
-            label: "Weight",
-            data: data.map((item) => {
-              if (item.weights) {
-                const weights = Object.entries(item.weights);
-                const mostRecent = weights.reduce((a, b) => (a[0] > b[0] ? a : b));
-                return mostRecent[1];
-              }
-              return 0;
-            }),
-            backgroundColor: "rgba(54, 162, 235, 0.5)",
-            borderColor: "rgba(54, 162, 235, 1)",
-            borderWidth: 1,
+    const initialVisibleGoals = data.reduce((acc, item) => {
+      acc[item.name] = item.email === userEmail; // Only show the current user's goal initially
+      return acc;
+    }, {});
+    setVisibleGoals(initialVisibleGoals);
+  }, [data, userEmail]);
+
+  // Update chart data and options whenever data or visibleGoals change
+  useEffect(() => {
+    const commonOptions = {
+      responsive: true,
+      plugins: {
+        tooltip: { enabled: true },
+        annotation: {
+          annotations: {},
+        },
+        zoom: {
+          pan: {
+            enabled: true,
+            mode: "xy", // Allow panning on both axes
+            threshold: 5, // Panning speed threshold
           },
-        ],
-      };
-      setChartData(barData);
-    } else {
-      const lineData = data.map((item, index) => ({
+          zoom: {
+            wheel: {
+              enabled: true, // Enable zooming with the mouse wheel only
+              speed: .05, // Set zoom speed to a slower value for smoother zooming
+            },
+            drag: {
+              enabled: false, // Disable drag-to-zoom to prevent conflicts with panning
+            },
+            mode: "xy", // Allow zooming on both axes
+          },
+        },
+      },
+      scales: {
+        x: {
+          type: "time",
+          time: {
+            unit: "day",
+            tooltipFormat: "MMM D, YYYY",
+          },
+        },
+      },
+    };
+
+    const lineData = data.map((item, index) => {
+      // Create trend line data
+      const trendData = item.weights
+        ? Object.entries(item.weights).map(([timestamp, weight]) => ({
+            x: new Date(parseInt(timestamp)),
+            y: weight,
+          }))
+        : [];
+
+      // Create the goal annotation if the user has a goal and it is visible
+      if (item.goal && visibleGoals[item.name]) {
+        const annotationId = `goalLine_${item.name}`;
+        commonOptions.plugins.annotation.annotations[annotationId] = {
+          type: "line",
+          yMin: item.goal,
+          yMax: item.goal,
+          borderColor: lineChartColors[index % lineChartColors.length],
+          borderWidth: 2,
+          borderDash: [5, 5], // Make the goal line dashed
+          label: {
+            display: true,
+            content: `Goal: ${item.goal}`,
+            backgroundColor: "rgba(255, 255, 255, 0.8)",
+            font: { size: 12 },
+            position: "end",
+          },
+        };
+      }
+
+      return {
         label: item.name,
-        data: item.weights
-          ? Object.entries(item.weights).map(([timestamp, weight]) => ({
-              x: new Date(parseInt(timestamp)),
-              y: weight,
-            }))
-          : [],
-        borderColor: lineChartColors[index % lineChartColors.length], // Cycle through the color array
+        data: trendData,
+        borderColor: lineChartColors[index % lineChartColors.length],
         backgroundColor: lineChartColors[index % lineChartColors.length],
         borderWidth: 2,
         fill: false,
-      }));
-      setChartData({ datasets: lineData });
-    }
-//  eslint-disable-next-line
-  }, [data, chartType]);
+      };
+    });
 
-  const options = {
-    line: {
-        scales: {
-          x: {
-            type: "time",
-            time: {
-              unit: "day",
-              tooltipFormat: "MMM D, YYYY",
-            },
-          }
-        }
-    },
-    bar: {
-      indexAxis: "y",
-    },
+    setChartData({ datasets: lineData });
+    setOptions(commonOptions);
+  }, [data, visibleGoals]);
+
+  const handleDropdownChange = (e, { value }) => {
+    // Update visibleGoals state based on dropdown selections
+    const updatedVisibleGoals = {};
+    data.forEach((item) => {
+      updatedVisibleGoals[item.name] = value.includes(item.name);
+    });
+    setVisibleGoals(updatedVisibleGoals);
   };
 
-  const toggleChartType = () => {
-    setChartType((prevType) => (prevType === "Bar" ? "Line" : "Bar"));
+  const handleResetZoom = () => {
+    if (chartRef.current) {
+      chartRef.current.resetZoom(); // Reset zoom using the Chart.js Zoom plugin's method
+    }
   };
 
   return (
     <Segment basic style={{ padding: 0 }}>
-      <Button onClick={toggleChartType}>Toggle to {chartType === "Bar" ? "Line" : "Bar"}</Button>
+      <div style={{ marginBottom: "1rem" }}>
+        <Dropdown
+          placeholder="Select Users to Show Goals"
+          multiple
+          search
+          fluid
+          selection
+          options={data.map((item, index) => ({
+            key: index,
+            text: `${item.name}'s Goal`,
+            value: item.name,
+          }))}
+          onChange={handleDropdownChange}
+          value={Object.keys(visibleGoals).filter((key) => visibleGoals[key])}
+        />
+      </div>
+      <Button onClick={handleResetZoom} color="pink" style={{ marginBottom: "1rem" }}>
+        Reset Zoom
+      </Button>
       {chartData && (
-        chartType === "Bar" ? (
-          <Bar data={chartData} options={options.bar} />
-        ) : (
-          <Line data={chartData} options={options.line} />
-        )
+        <Line ref={chartRef} data={chartData} options={options} />
       )}
     </Segment>
   );

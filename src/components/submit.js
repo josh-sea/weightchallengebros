@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Form, Button, Message } from 'semantic-ui-react';
+import { Form, Button, Message, FormGroup, FormField, FormButton, Input, Segment } from 'semantic-ui-react';
 import { ref, update } from 'firebase/database';
 import { auth, database } from '../admin/auth';
 
@@ -41,20 +41,22 @@ const WeightSubmission = () => {
     };
 
     return (
+
         <Form onSubmit={handleSubmit} success={success} error={!!error}>
             {success && <Message success header="Success" content="Weight recorded successfully." />}
             {error && <Message error header="Error" content={error} />}
-            <Form.Field>
-                <label>Enter Your Weight</label>
-                <input
+            <FormGroup>
+                <FormField
                     type="text"
-                    placeholder="Weight (e.g., 65.5)"
+                    placeholder="Enter Weight (e.g., 190)"
+                    control={Input}
                     value={weight}
                     onChange={(e) => setWeight(e.target.value)}
                 />
-            </Form.Field>
-            <Button type='submit'>Submit</Button>
+                <FormButton type="submit">Submit Weight</FormButton>
+            </FormGroup>
         </Form>
+
     );
 };
 

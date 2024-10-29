@@ -25,8 +25,7 @@ const SignUp = () => {
                 metadata: user.metadata
                 // Additional user data can be set here
             });
-
-            navigate('/home'); // Navigate to the Home component on successful signup
+            navigate('/home', { state: { userEmail: user.email } }); // Navigate to the Home component with email as a prop
         } catch (error) {
             setError(error.message);
         }
