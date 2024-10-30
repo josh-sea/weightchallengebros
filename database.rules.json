@@ -6,6 +6,12 @@
         ".read": "$uid === auth.uid || auth.token.admin === true",  // A user can read their own data or admin can read all data
         ".write": "$uid === auth.uid || auth.token.admin === true"  // A user can write their own data or admin can write all data
       }
+    },
+    "messages": {
+      ".read": "auth != null",  // All authenticated users can read messages
+      "$messageId": {
+        ".write": "auth != null && (!data.exists() || data.child('userEmail').val() === auth.token.email)"  // Allow authenticated users to write new messages or update their messages
+      }
     }
   }
 }
