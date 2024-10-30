@@ -75,6 +75,9 @@ const UserWeightChart = ({ data, goal, userEmail }) => {
               enabled: true, // Enable zooming with the mouse wheel only
               speed: .05, // Set zoom speed to a slower value for smoother zooming
             },
+            pinch: {
+              enabled: true, // Enable pinch-to-zoom for touch devices
+            },
             drag: {
               enabled: false, // Disable drag-to-zoom to prevent conflicts with panning
             },

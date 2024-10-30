@@ -8,16 +8,21 @@ import '../App.css';
 
 const Delta = Quill.import('delta');
 
+// Utility function to detect if the user is on a mobile device
+const isMobileDevice = () => {
+  return /Mobi|Android/i.test(navigator.userAgent);
+};
+
 const ChatComponent = ({ userEmail }) => {
   const [messages, setMessages] = useState([]);
   const containerRef = useRef(null);
-  const defaultValueRef = useRef(
-    new Delta().insert('Share something... (use cmd+enter or ctrl+enter to send)', {
-      size: 'large',
-      color: '#999',
-      italic: true,
-    })
-  );
+//   const defaultValueRef = useRef(
+//     new Delta().insert('Share something...', {
+//       size: 'large',
+//       color: '#999',
+//       italic: true,
+//     })
+//   );
   const chatEndRef = useRef(null);
   const quillRef = useRef(null);
 
@@ -50,7 +55,8 @@ const ChatComponent = ({ userEmail }) => {
     const container = containerRef.current;
     const editorContainer = container.appendChild(container.ownerDocument.createElement('div'));
 
-    const toolbarOptions = [
+    // Determine the toolbar options based on device type
+    const toolbarOptions = isMobileDevice() ? false : [
       ['bold', 'italic', 'underline', 'strike'],
       ['blockquote', 'code-block', 'link'],
       [{ list: 'ordered' }, { list: 'bullet' }, { list: 'check' }],
@@ -69,9 +75,9 @@ const ChatComponent = ({ userEmail }) => {
 
     quillRef.current = quill;
 
-    if (defaultValueRef.current) {
-      quill.setContents(defaultValueRef.current);
-    }
+    // if (defaultValueRef.current) {
+    //   quill.setContents(defaultValueRef.current);
+    // }
 
     return () => {
       quillRef.current = null;
@@ -109,8 +115,12 @@ const ChatComponent = ({ userEmail }) => {
   // Handle hotkeys for sending messages
   const handleHotKeys = (e) => {
     if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
-      handleSendMessage();
-      e.preventDefault();
+        e.preventDefault();
+        handleSendMessage();
+    } else if (e.key === 'Enter') {
+        e.preventDefault();
+        const quillInstance = quillRef.current;
+        quillInstance.insertText(quillInstance.getSelection().index, '\n');
     }
   };
 
@@ -150,20 +160,29 @@ const ChatComponent = ({ userEmail }) => {
   }, [messages]);
 
   return (
-    <Container fluid style={{ height: '65vh', padding: '1rem 0' }}>
+    <Container
+      fluid
+      style={{
+        height: '60vh',
+        padding: '1rem',
+        display: 'flex',
+        flexDirection: 'column',
+        boxSizing: 'border-box',
+      }}
+    >
       {/* Chat Messages Display */}
       <Segment
         basic
         className="scroll"
         style={{
-          overflowY: 'auto',
+          overflowY: 'scroll',
           padding: '1rem',
           border: '1px solid #ccc',
           borderRadius: '5px',
-          marginBottom: '1rem',
           backgroundColor: '#f9f9f9',
           wordBreak: 'break-word',
-          height: '40vh',
+          flexGrow: 1,
+          marginBottom: '1rem',
         }}
       >
         {messages.map((msg) => (
@@ -223,8 +242,29 @@ const ChatComponent = ({ userEmail }) => {
       <div
         ref={containerRef}
         onKeyDown={handleHotKeys}
-        style={{ height: '15vh'}}
+        style={{
+          height: '17vh',
+          position: 'relative',
+          marginBottom: '1rem'
+        }}
       />
+      {/* Floating Send Button */}
+      <Button
+        icon
+        circular
+        size='massive'
+        color="blue"
+        onClick={handleSendMessage}
+        style={{
+          position: 'absolute',
+          bottom: '-15px',
+          right: '25px',
+          zIndex: '1',
+          transform: 'translateY(-50%)',
+        }}
+      >
+        <Icon name="send" />
+      </Button>
     </Container>
   );
 };
