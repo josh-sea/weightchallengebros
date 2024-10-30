@@ -15,6 +15,7 @@ const Login = () => {
         e.preventDefault();
         try {
             const signedin = await signInWithEmailAndPassword(auth, email, password);
+            console.log(signedin.user.email)
             navigate('/home', { state: { userEmail: signedin.user.email } }); // Navigate to the Home component with email as a prop
         } catch (error) {
             setError(error.message);

@@ -8,3 +8,39 @@
   -ms-overflow-style: none;  /* IE and Edge */
   scrollbar-width: none;  /* Firefox */
 }
+
+.chat-message-content ul, .chat-message-content ol {
+  margin-left: 20px; /* or whatever value provides a suitable indent */
+}
+
+.chat-message-content ul li, .chat-message-content ol li {
+  list-style-position: inside; /* or 'outside' depending on the desired effect */
+}
+
+.ql-indent-1 {
+  padding-left: 20px;
+}
+.ql-indent-2 {
+  padding-left: 40px;
+}
+.ql-indent-3 {
+  padding-left: 60px;
+}
+.ql-indent-4 {
+  padding-left: 80px;
+}
+.ql-indent-5 {
+  padding-left: 100px;
+}
+/* Add more if you need deeper levels of indentation */
+
+
+.ql-editor ul,
+.ql-editor ol {
+  padding-left: 20px; /* Adjust to ensure bullets have enough padding to be visible */
+  list-style-type: disc !important; /* Force bullets to be displayed for unordered lists */
+}
+
+.ql-editor li {
+  padding-left: 10px; /* Ensure list items have padding */
+}

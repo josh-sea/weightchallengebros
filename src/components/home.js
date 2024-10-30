@@ -15,13 +15,18 @@ import UserWeightChart from "./weightChart";
 import LogoutButton from "../admin/logout";
 import GoalSubmission from "./submitGoal";
 import WeightTable from "./weightTable";
+import ChatComponent from "./chat";
+import { useLocation } from 'react-router-dom';
 
-const Home = ({userEmail}) => {
+
+const Home = () => {
+  
   const [weights, setWeights] = useState([]);
   const [weightData, setWeightData] = useState([]);
   const [activeIndex, setActiveIndex] = useState(1); // For Accordion
   const [goal, setGoal] = useState();
-
+  const location = useLocation();
+  const userEmail = location.state?.userEmail; // Safely access userEmail
   useEffect(() => {
     // Listen for authentication state changes
     const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
@@ -119,6 +124,18 @@ const Home = ({userEmail}) => {
             <Segment basic>
               {weightData.length !== 0 && <UserWeightChart data={weightData} goal={goal} userEmail={userEmail}/>}
             </Segment>
+          </Accordion.Content>
+
+          <Accordion.Title
+            active={activeIndex === 2}
+            index={2}
+            onClick={handleClick}
+          >
+            <Icon name="dropdown" />
+            Chat
+          </Accordion.Title>
+          <Accordion.Content active={activeIndex === 2}>
+            <ChatComponent userEmail={userEmail} />
           </Accordion.Content>
         </Accordion>
       </SegmentGroup>
